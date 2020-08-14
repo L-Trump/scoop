@@ -44,7 +44,11 @@ function install_app($app, $architecture, $global, $suggested, $use_cache = $tru
     pre_install $manifest $architecture
     run_installer $fname $manifest $architecture $dir $global
     ensure_install_dir_not_in_path $dir $global
-    $dir = link_current $dir
+    if( $nocurrent -eq $true ) {
+        Write-Host -f Yellow "This App would not use Current direcotry"
+    } else {
+        $dir = link_current $dir
+    }
     create_shims $manifest $dir $global $architecture
     create_startmenu_shortcuts $manifest $dir $global $architecture
     install_psmodule $manifest $dir $global
@@ -802,11 +806,12 @@ function shim_def($item) {
 }
 
 function create_shims($manifest, $dir, $global, $arch) {
+    $noWait = $manifest.nowait
     $shims = @(arch_specific 'bin' $manifest $arch)
     $shims | Where-Object { $_ -ne $null } | ForEach-Object {
         $target, $name, $arg = shim_def $_
         write-output "Creating shim for '$name'."
-
+        if ($nowait -eq $true) { Write-Host "The shim of this app will finish itself without waiting" }
         if(test-path "$dir\$target" -pathType leaf) {
             $bin = "$dir\$target"
         } elseif(test-path $target -pathType leaf) {
